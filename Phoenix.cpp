@@ -27,44 +27,11 @@ std::vector<std::complex<double>> Zrs {
 
 // Apollonius比 Alp[P][Zero]
 double Alp[5][5] = {
-		{ 0.22537, 0.091394, 0.091394, 0.011544, 0.011544 },  // P=2
-		{ 0.47341, 0.345393, 0.345393, 0.185013, 0.185013 },  // P=4
-		{ 0.66136, 0.572516, 0.572516, 0.435258, 0.435258 },  // P=8
-		{ 0.79171, 0.737833, 0.737833, 0.646822, 0.646822 },  // P=16
-		{ 0.87622, 0.845898, 0.845898, 0.792585, 0.792585 }   // P=32
-};
-
-// Apollonius弧の startArg & endArg
-// P, base(i), oppo(j), start, end
-
-// Apollonius 円クラス
-class ApCircle
-{
-protected:
-	std::complex<double> c_; // center
-	double r_;  // radius
-
-public:
-	ApCircle( const double alp, const std::complex<double> base, const std::complex<double> oppo )
-	{
-		assert( alp > 0.0 );
-
-		c_ = (base - alp*alp*oppo) / (1 - alp*alp);
-		r_ = alp*abs(base - oppo) / (1 - alp*alp);
-	}
-
-	// Getters
-	std::complex<double> center() const { return c_; }
-	double radius() const { return r_; }
-
-	// Operator
-	ApCircle &operator=( const ApCircle& ac )
-	{
-		c_ = ac.c_;
-		r_ = ac.r_;
-
-		return *this;
-	}
+		{ 0.22537048,  0.091394087, 0.091394087, 0.011544329, 0.011544329 },  // P=2
+		{ 0.473412, 0.345393,  0.345393,  0.185013,  0.185013  },  // P=4
+		{ 0.661355, 0.572516,  0.572516,  0.435258,  0.435258  },  // P=8
+		{ 0.791709, 0.737833,  0.737833,  0.646822,  0.646822  },  // P=16
+		{ 0.87622,  0.845898,  0.845898,  0.792585,  0.792585  }   // P=32
 };
 
 class ApArc
@@ -76,16 +43,21 @@ protected:
 	double edA_;  // 終点の偏角
 
 public:
+	// Default Constructor
+	ApArc()
+	{
+	}
+
 	// Constructor
 	ApArc( const int p, const int base, const int oppo,
-			const double stA, const double edA )
+			const double stA = 0.0, const double edA = 2.0*M_PI )
 	{
 		assert( base != oppo );
 
 		c_ = (Zrs[base] - Alp[p][base]*Alp[p][base]*Zrs[oppo]) / (1 - Alp[p][base]*Alp[p][base]);
 		r_ = Alp[p][base]*abs(Zrs[base] - Zrs[oppo]) / (1 - Alp[p][base]*Alp[p][base]);
-		stA_ = 0.0;
-		edA_ = 2.0*M_PI;
+		stA_ = stA;
+		edA_ = edA;
 	}
 
 	// Getters
@@ -94,18 +66,53 @@ public:
 	double startArg() const { return stA_; }
 	double endArg() const { return edA_; }
 
+	// 偏角 stA_ の位置
 	std::complex<double> startPt() const
 	{
 		std::complex<double> tmp( cos( stA_ ), sin( stA_ ) );
 		return c_ + tmp;
 	}
 
+	// 偏角 edA_ の位置
 	std::complex<double> endPt() const
 	{
 		std::complex<double> tmp( cos( edA_ ), sin( edA_ ) );
 		return c_ + tmp;
 	}
+
+	// Operator
+	ApArc &operator=( const ApArc& ac )
+	{
+		c_ = ac.c_;
+		r_ = ac.r_;
+		stA_ = ac.stA_;
+		edA_ = ac.edA_;
+
+		return *this;
+	}
 };
+
+void P2arcs( const int p, std::vector< ApArc>& ApArcs )
+{
+	ApArc temp;
+	temp = ApArc(p,0,1, 1.511, -1.511);
+	ApArcs.push_back(temp);
+
+	temp = ApArc(p,0,2, 4.653, 1.631);
+	ApArcs.push_back(temp);
+
+	temp = ApArc(p,1,0);
+	ApArcs.push_back(temp);
+
+	temp = ApArc(p,2,0);
+	ApArcs.push_back(temp);
+
+	temp = ApArc(p,3,0);
+	ApArcs.push_back(temp);
+
+	temp = ApArc(p,4,0);
+	ApArcs.push_back(temp);
+}
 
 int main(int argc, char *argv[])
 {
@@ -123,21 +130,15 @@ int main(int argc, char *argv[])
 	else if (P==16) p=3;
 	else if (P==32) p=4;
 
-	for (int i=0; i<N; i++)
-	{
-		std::cout << i << ":\n";
+	std::vector< ApArc > ApArcs;
 
-		std::complex<double> base = Zrs[i];
-		double alp = Alp[p][i];
-		for (int j=0; j<N; j++)
-		{
-			if (i != j)
-			{
-				ApArc tmp( p, i, j, 0.0, 2.0*M_PI );
-				std::cout << j << ": " << tmp.center() << ", " << tmp.radius() << std::endl;
-			}
-		}
-		std::cout << std::endl;
+	P2arcs( p, ApArcs );
+
+	for (auto itr = ApArcs.begin(); itr < ApArcs.end(); ++itr)
+	{
+		std::cout << (*itr).center() << std::endl;
+		std::cout << (*itr).startArg() << ", " << (*itr).endArg() << std::endl;
+		std::cout << (*itr).startPt() << ", " << (*itr).endPt() << std::endl << std::endl;
 	}
 
 	return EXIT_SUCCESS;
